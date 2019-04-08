@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container pt-5">
+        <h1>The Best image optimizer!</h1>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <div class="custom-file">
+                <input type="file" name="file" class="custom-file-input" id="customFile">
+                <label class="custom-file-label" for="customFile">Choose file</label>
+              </div>
+            <input type="file"  class="custom-file-input">
+            <input class="btn btn-primary" type="submit" value="Submit">
+        </form>
+        {{if .HandledImageName}}
+        <a href="http://127.0.0.1:8086/images?file=lol.jpg">Image</a>
+        {{else}}
+        {{end}}
+        
+        {{range .Errors}}
+        <b>{{ .Error }}</b>
+        {{end}}
+    </div>
+</body>
+</html>

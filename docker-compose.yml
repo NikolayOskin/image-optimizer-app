@@ -1,0 +1,9 @@
+version: "2"
+
+services:
+  app:
+    build: ./build
+    volumes:
+      - /C/projects/web:/go/src
+    working_dir: /go/src
+    command: bash -c "go run main.go"
