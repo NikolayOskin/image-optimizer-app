@@ -37,7 +37,11 @@ func showHomePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleUploadedForm(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(1000000000)
+	r.Body = http.MaxBytesReader(w, r.Body, 5<<20) // 5mb max file size
+	err := r.ParseMultipartForm(2 << 20)
+	if err != nil {
+		panic(err)
+	}
 	file, header, err := r.FormFile("file")
 	switch err {
 	case nil:
