@@ -5,9 +5,11 @@ import (
 	"html/template"
 	"io"
 	"log"
-	"mime/multipart"
+	"net"
 	"net/http"
 	"os"
+	"runtime"
+	"time"
 )
 
 type validationError struct {
@@ -21,90 +23,64 @@ type appData struct {
 
 var data appData
 
+const imagesPath string = "./images/"
+
 func main() {
 	data = appData{}
 	http.HandleFunc("/", showHomePage)
-	http.HandleFunc("/upload", handleUploadedForm)
+	http.HandleFunc("/upload", handleUpload)
 	http.HandleFunc("/images", handleDownloadFile)
 	//http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("./images"))))
-	log.Fatal(http.ListenAndServe(":8088", nil))
+
+	srv := &http.Server{
+		Addr:         net.JoinHostPort("", "8083"),
+		ReadTimeout:  90 * time.Second,
+		WriteTimeout: 90 * time.Second,
+	}
+	log.Println(srv.ListenAndServe())
 }
 
 func showHomePage(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.ParseFiles("templates/home.html"))
-	tmpl.Execute(w, data)
-	data.Errors = nil
-}
-
-func handleUploadedForm(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, 5<<20) // 5mb max file size
-	err := r.ParseMultipartForm(2 << 20)
+	err := tmpl.Execute(w, data)
 	if err != nil {
 		panic(err)
 	}
-	file, header, err := r.FormFile("file")
-	switch err {
-	case nil:
-	case http.ErrMissingFile:
-		data.Errors = append(data.Errors, validationError{Error: "You didn't choose file to upload"})
-		log.Println("no file")
-		http.Redirect(w, r, "/", 301)
-		return
-	default:
-		log.Println(err)
-	}
-	defer file.Close()
 
-	fileHeader := make([]byte, 512)
-	if _, err := file.Read(fileHeader); err != nil {
-		panic(err.Error())
-	}
-	// set position back to start.
-	if _, err := file.Seek(0, 0); err != nil {
-		panic(err.Error())
-	}
-	if isFiletypeValid(fileHeader) == false {
-		http.Redirect(w, r, "/", 301)
-		return
-	}
-	uploadImage(&file, header.Filename)
-	http.Redirect(w, r, "/", 301)
-	return
-}
-
-func uploadImage(file *multipart.File, filename string) {
-	uploadedFile, err := os.OpenFile("./images/"+filename, os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		panic(err.Error())
-	}
-	defer uploadedFile.Close()
-	_, err = io.Copy(uploadedFile, *file)
-	if err != nil {
-		panic(err.Error())
-	}
-}
-
-func isFiletypeValid(fileHeader []byte) bool {
-	contentType := http.DetectContentType(fileHeader)
-	if contentType != "image/jpeg" && contentType != "image/jpg" {
-		data.Errors = append(data.Errors, validationError{Error: "Filetype is not correct. Allowed types: jpg, jpeg, png, gif"})
-		return false
-	}
-	return true
+	data.Errors = nil
 }
 
 func handleDownloadFile(w http.ResponseWriter, r *http.Request) {
-	requestedFileName := r.URL.Query().Get("file")
-	if requestedFileName == "" {
+	fileName := r.URL.Query().Get("file")
+	if fileName == "" {
 		http.Error(w, "Requested filename is empty", 400)
+		return
 	}
-	file, err := os.Open("./images/" + requestedFileName)
+	w.Header().Set("Content-Disposition", "attachment; filename="+fileName)
+
+	file, err := os.Open(imagesPath + fileName)
 	if err != nil {
 		http.Error(w, "File doesn't exists", 404)
+		return
 	}
 	defer file.Close()
-	fmt.Println(file.Stat())
-	w.Header().Set("Content-Disposition", "attachment; filename="+requestedFileName)
-	io.Copy(w, file)
-	return
+
+	if _, err := io.Copy(w, file); err != nil {
+		http.Error(w, "Something goes wrong", 500)
+		return
+	}
+}
+
+func PrintMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
+	fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
+	fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
+	fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
+	fmt.Printf("\tNumGC = %v\n", m.NumGC)
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
 }
