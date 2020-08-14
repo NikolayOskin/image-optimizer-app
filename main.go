@@ -3,36 +3,18 @@ package main
 import (
 	"fmt"
 	"runtime"
+
+	"github.com/gorilla/sessions"
 )
 
 const imagesPath string = "./images/"
+const sessionName string = "tiny-images"
 
-type validationError struct {
-	Error string
-}
-
-type appData struct {
-	Errors           []validationError
-	HandledImageName string
-}
-
-var data appData
-
-const imagesPath string = "./images/"
+var store *sessions.CookieStore
 
 func main() {
-	data = appData{}
-	http.HandleFunc("/", showHomePage)
-	http.HandleFunc("/upload", handleUpload)
-	http.HandleFunc("/images", handleDownloadFile)
-	//http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("./images"))))
-
-	srv := &http.Server{
-		Addr:         net.JoinHostPort("", "8083"),
-		ReadTimeout:  90 * time.Second,
-		WriteTimeout: 90 * time.Second,
-	}
-	log.Println(srv.ListenAndServe())
+	app := NewApp()
+	app.Run()
 }
 
 func PrintMemUsage() {
