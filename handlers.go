@@ -7,21 +7,33 @@ import (
 	"os"
 )
 
-type request struct {
-	Errors []validationError
+type sessionData struct {
+	Error string
 }
 
-const requestCtx = "requestCtx"
-
 func showHomePage(w http.ResponseWriter, r *http.Request) {
+	sessionData := sessionData{}
+
+	session, err := store.Get(r, sessionName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if errors := session.Flashes(); len(errors) > 0 {
+		sessionData.Error = errors[0].(string)
+	}
+	err = session.Save(r, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	tmpl := template.Must(template.ParseFiles("templates/home.html"))
-	ctx := r.Context().Value(requestCtx).(request)
-	err := tmpl.Execute(w, ctx)
+	err = tmpl.Execute(w, sessionData)
 	if err != nil {
 		panic(err)
 	}
-
-	//data.Errors = nil
 }
 
 func showResult(w http.ResponseWriter, r *http.Request) {
