@@ -10,3 +10,6 @@ services:
       - ./:/app
     ports:
       - 8083:8083
+    environment:
+      SERVER_PORT: 8083
+      SESSION_KEY: DONT_FORGET_TO_CHANGE_IT
