@@ -12,7 +12,7 @@ const jpegType = "image/jpeg"
 const jpgType = "image/jpg"
 const pngType = "image/png"
 
-func handleUpload(w http.ResponseWriter, r *http.Request) {
+func upload(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 10<<20) // 10mb max file size
 	err := r.ParseMultipartForm(1 << 20)
 	if err != nil {
@@ -80,7 +80,19 @@ func parseImageType(file multipart.File) string {
 	return fileType
 }
 
-func redirectWithErr(w http.ResponseWriter, r *http.Request, err string) {
-	data.Errors = append(data.Errors, validationError{Error: err})
+func redirectWithErr(w http.ResponseWriter, r *http.Request, errText string) {
+	session, err := store.Get(r, sessionName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	session.AddFlash(errText)
+	err = session.Save(r, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	http.Redirect(w, r, "/", 301)
 }
