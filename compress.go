@@ -11,21 +11,20 @@ import (
 	"os"
 )
 
-func optimizeJPEG(path string) bool {
-	// Read image
+func optimizeJPEG(path string) (int64, error) {
 	finput, err := os.Open(path)
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 	input, err := ioutil.ReadAll(finput)
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 	in := bytes.NewReader(input)
 	img, err := jpeg.Decode(in)
 	finput.Close()
 	if err != nil {
-		return false
+		return 0, err
 	}
 
 	// Encode image
@@ -35,7 +34,7 @@ func optimizeJPEG(path string) bool {
 		Optimize: true,
 	})
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 
 	outlen := int64(out.Len())
@@ -43,18 +42,18 @@ func optimizeJPEG(path string) bool {
 		// Write to file
 		f, err := os.Create(path)
 		if err != nil {
-			panic(err)
+			return 0, err
 		}
 		_, err = io.Copy(f, out)
 		if err != nil {
-			panic(err)
+			return 0, err
 		}
 		f.Close()
 
 		saved := (in.Size() - outlen) * 100 / in.Size()
-		fmt.Println(fmt.Sprintf("%02d%% %s", saved, path))
+		return saved, nil
 	} else {
-		fmt.Println(fmt.Sprintf("--- %s", path))
+		return 0, nil
 	}
 }
 
