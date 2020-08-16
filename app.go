@@ -48,7 +48,7 @@ func (a *app) Run() {
 	http.HandleFunc("/upload", upload)
 	http.HandleFunc("/result", showResult)
 	http.HandleFunc("/images", download)
-	//http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("./images"))))
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
 
 	srv := &http.Server{
 		Addr:         net.JoinHostPort("", a.config.serverPort),
