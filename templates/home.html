@@ -4,28 +4,152 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" crossorigin="anonymous">
+    <title>Tiny Image</title>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
+            integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
+            crossorigin="anonymous"></script>
 </head>
 <body>
-    <div class="container pt-5">
-        <h1>The Best image optimizer!</h1>
-        <form action="/upload" method="POST" enctype="multipart/form-data">
-            <div class="custom-file">
-                <input type="file" name="file" class="custom-file-input" id="customFile">
-                <label class="custom-file-label" for="customFile">Choose file</label>
-              </div>
-            <input type="file"  class="custom-file-input">
-            <input class="btn btn-primary" type="submit" value="Submit">
-        </form>
-        {{if .HandledImageName}}
-        <a href="http://127.0.0.1:8086/images?file=lol.jpg">Image</a>
-        {{else}}
-        {{end}}
-        
-        {{range .Errors}}
-        <b>{{ .Error }}</b>
-        {{end}}
+<div class="container center">
+    <div class="row">
+        <div class="col-md-12 pt-5">
+            <h1>Tiny Image</h1>
+        </div>
     </div>
+
+    <form name="upload" method="post" action="/upload" enctype="multipart/form-data" accept-charset="utf-8">
+        <div class="row">
+            <div class="col col-md-offset-3 center">
+                <div class="btn-container">
+                    <!--the three icons: default, ok file (img), error file (not an img)-->
+                    <h1 class="imgupload"><i class="fa fa-file-image-o"></i></h1>
+                    <h1 class="imgupload ok"><i class="fa fa-check"></i></h1>
+                    <h1 class="imgupload stop"><i class="fa fa-times"></i></h1>
+                    <!--this field changes dinamically displaying the filename we are trying to upload-->
+                    <p id="namefile" class="mb-5">Only pics allowed! (jpg, jpeg, png)</p>
+                    <!--our custom btn which which stays under the actual one-->
+                    <button type="button" id="btnup" class="btn btn-primary btn-lg">Browse for pic!</button>
+                    <!--this is the actual file input, is set with opacity=0 beacause we wanna see our custom one-->
+                    <input type="file" value="" name="file" id="fileup">
+                </div>
+            </div>
+        </div>
+        <!--additional fields-->
+        <div class="row">
+            <div class="col-md-12">
+                <!--the defauld disabled btn and the actual one shown only if the three fields are valid-->
+                <input type="submit" value="Optimize!" class="btn btn-primary" id="submitbtn">
+                <button type="button" class="btn btn-default" disabled="disabled" id="fakebtn">Optimize! <i class="fa fa-minus-circle"></i></button>
+            </div>
+        </div>
+    </form>
+</div>
+<style>
+    /*just bg and body style*/
+    .container{
+        background-color:white;
+        padding-bottom:20px;
+        margin-top:10px;
+        border-radius:5px;
+    }
+    .center{
+        text-align:center;
+    }
+    .btn-container{
+        background:#fff;
+        border-radius:5px;
+        padding-bottom:20px;
+        margin-bottom:20px;
+    }
+    .imgupload{
+        color:#1E2832;
+        padding-top:40px;
+        font-size:7em;
+    }
+    #namefile{
+        color:black;
+    }
+    h4>strong{
+        color:#ff3f3f
+    }
+    .btn-primary{
+        border-color: #355c79 !important;
+        color: #ffffff;
+        text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+        background-color: #355c79 !important;
+    }
+    .btn {
+        border-radius: 10px;
+    }
+
+    /*these two are set to not display at start*/
+    .imgupload.ok{
+        display:none;
+        color:#9da72b;
+    }
+    .imgupload.stop{
+        display:none;
+        color:#f67280;
+    }
+
+    /*this sets the actual file input to overlay our button*/
+    #fileup{
+        opacity: 0;
+        -moz-opacity: 0;
+        filter: progid:DXImageTransform.Microsoft.Alpha(opacity=0);
+        width:200px;
+        cursor: pointer;
+        position:absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 40px;
+        height: 50px;
+    }
+
+    /*switch between input and not active input*/
+    #submitbtn{
+        padding:5px 50px;
+        display:none;
+    }
+    #fakebtn{
+        padding:5px 40px;
+    }
+</style>
+<script>
+    $('#fileup').change(function(){
+        var res=$('#fileup').val();
+        var arr = res.split("\\");
+        var filename=arr.slice(-1)[0];
+        filextension=filename.split(".");
+        filext="."+filextension.slice(-1)[0];
+        valid=[".jpg",".png",".jpeg"];
+
+        if (valid.indexOf(filext.toLowerCase())==-1){
+            $( ".imgupload" ).hide("slow");
+            $( ".imgupload.ok" ).hide("slow");
+            $( ".imgupload.stop" ).show("slow");
+
+            $('#namefile').css({"color":"#f67280","font-weight":700});
+            $('#namefile').html("File "+filename+" is not  pic!");
+
+            $( "#submitbtn" ).hide();
+            $( "#fakebtn" ).show();
+        }else{
+            //if file is valid we show the green alert and show the valid submit
+            $( ".imgupload" ).hide("slow");
+            $( ".imgupload.stop" ).hide("slow");
+            $( ".imgupload.ok" ).show("slow");
+
+            $('#namefile').css({"color":"#9da72b","font-weight":700});
+            $('#namefile').html(filename);
+
+            $( "#submitbtn" ).show();
+            $( "#fakebtn" ).hide();
+        }
+    });
+</script>
 </body>
 </html>
