@@ -21,21 +21,12 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	file, header, err := r.FormFile("file")
-
-	switch err {
-	case nil:
-	case http.ErrMissingFile:
-		redirectWithErr(w, r, "You didn't choose file to upload")
-		return
-	default:
-		_, _ = w.Write([]byte("something goes wrong"))
+	if errWhileUpload(w, r, err) {
 		return
 	}
-
 	defer file.Close()
 
 	imageType := parseImageType(file)
-
 	if imageType != jpegType && imageType != jpgType && imageType != pngType {
 		redirectWithErr(w, r, "File is not correct. Allowed types: jpeg, jpg, png")
 		return
@@ -47,25 +38,48 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	saved, err := optimizeImage(imageType, path)
+	if err != nil {
+		log.Printf("error while optimizing image file: %v", err)
+		redirectWithErr(w, r, "something goes wrong")
+		return
+	}
+
+	redirectToResultPage(w, r, path, saved)
+}
+
+func errWhileUpload(w http.ResponseWriter, r *http.Request, err error) bool {
+	switch err {
+	case nil:
+	case http.ErrMissingFile:
+		redirectWithErr(w, r, "You didn't choose file to upload")
+		return true
+	default:
+		_, _ = w.Write([]byte("something goes wrong"))
+		return true
+	}
+	return false
+}
+
+func optimizeImage(imageType string, path string) (int64, error) {
+	var saved int64
+
 	if imageType == jpegType || imageType == jpgType {
 		saved, err := optimizeJPEG(path)
 		if err != nil {
-			log.Printf("error while optimizing jpeg/jpg file: %v", err)
-			redirectWithErr(w, r, "something goes wrong")
-			return
+			return saved, err
 		}
-		redirectWithResult(w, r, path, saved)
+		return saved, nil
 	}
-
 	if imageType == pngType {
 		saved, err := optimizePNG(path)
 		if err != nil {
-			log.Printf("error while optimizing png file: %v", err)
-			redirectWithErr(w, r, "something goes wrong")
-			return
+			return saved, err
 		}
-		redirectWithResult(w, r, path, saved)
+		return saved, nil
 	}
+
+	return saved, errors.New("imageType passed not jpeg or png")
 }
 
 func storeFile(file *multipart.File, filename string) (string, error) {
@@ -94,7 +108,7 @@ func parseImageType(file multipart.File) string {
 	return fileType
 }
 
-func redirectWithResult(w http.ResponseWriter, r *http.Request, path string, saved int64) {
+func redirectToResultPage(w http.ResponseWriter, r *http.Request, path string, saved int64) {
 
 }
 
