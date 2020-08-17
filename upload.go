@@ -45,7 +45,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectToResultPage(w, r, path, saved)
+	redirectToResultPage(w, r, header.Filename, saved)
 }
 
 func errWhileUpload(w http.ResponseWriter, r *http.Request, err error) bool {
@@ -108,8 +108,22 @@ func parseImageType(file multipart.File) string {
 	return fileType
 }
 
-func redirectToResultPage(w http.ResponseWriter, r *http.Request, path string, saved int64) {
+func redirectToResultPage(w http.ResponseWriter, r *http.Request, filename string, saved int64) {
+	session, err := store.Get(r, sessionName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
+	session.AddFlash(filename)
+	session.AddFlash(int(saved))
+	err = session.Save(r, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/result", 301)
 }
 
 func redirectWithErr(w http.ResponseWriter, r *http.Request, errText string) {

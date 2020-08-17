@@ -8,7 +8,9 @@ import (
 )
 
 type sessionData struct {
-	Error string
+	Error    string
+	Saved    int
+	Filename string
 }
 
 func showHomePage(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +39,29 @@ func showHomePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func showResult(w http.ResponseWriter, r *http.Request) {
+	sessionData := sessionData{}
 
+	session, err := store.Get(r, sessionName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if sessionValues := session.Flashes(); len(sessionValues) > 0 {
+		sessionData.Filename = sessionValues[0].(string)
+		sessionData.Saved = sessionValues[1].(int)
+	}
+	err = session.Save(r, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	tmpl := template.Must(template.ParseFiles("templates/result.html"))
+	err = tmpl.Execute(w, sessionData)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func download(w http.ResponseWriter, r *http.Request) {
