@@ -30,7 +30,7 @@ func optimizeJPEG(path string) (int64, error) {
 	// Encode image
 	out := new(bytes.Buffer)
 	err = mozjpegbin.Encode(out, img, &mozjpegbin.Options{
-		Quality:  80,
+		Quality:  70,
 		Optimize: true,
 	})
 	if err != nil {
