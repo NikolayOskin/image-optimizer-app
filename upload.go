@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -36,7 +37,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	imageType := parseImageType(file)
 
 	if imageType != jpegType && imageType != jpgType && imageType != pngType {
-		redirectWithErr(w, r, "File is not correct. Allowed types: jpeg, png")
+		redirectWithErr(w, r, "File is not correct. Allowed types: jpeg, jpg, png")
 		return
 	}
 
@@ -47,11 +48,24 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if imageType == jpegType || imageType == jpgType {
-		optimizeJPEG(path)
+		saved, err := optimizeJPEG(path)
+		if err != nil {
+			log.Printf("error while optimizing jpeg/jpg file: %v", err)
+			redirectWithErr(w, r, "something goes wrong")
+			return
+		}
+		redirectWithResult(w, r, path, saved)
 	}
 
-	http.Redirect(w, r, "/", 301)
-	return
+	if imageType == pngType {
+		saved, err := optimizePNG(path)
+		if err != nil {
+			log.Printf("error while optimizing png file: %v", err)
+			redirectWithErr(w, r, "something goes wrong")
+			return
+		}
+		redirectWithResult(w, r, path, saved)
+	}
 }
 
 func storeFile(file *multipart.File, filename string) (string, error) {
@@ -78,6 +92,10 @@ func parseImageType(file multipart.File) string {
 	fileType := http.DetectContentType(fileHeader)
 
 	return fileType
+}
+
+func redirectWithResult(w http.ResponseWriter, r *http.Request, path string, saved int64) {
+
 }
 
 func redirectWithErr(w http.ResponseWriter, r *http.Request, errText string) {
