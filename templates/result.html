@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Tiny Image</title>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="/assets/main.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
+            integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
+            crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="container center">
+    <div class="row">
+        <div class="col-md-12 pt-5">
+            <h1>Result</h1>
+            {{if (gt .Saved 0)}}
+                <p>TinyImage just saved you <b>{{ .Saved }}%</b></p>
+            <p>
+                <a type="button" href="/images?file={{.Filename}}" class="btn btn-primary">Download</a>
+            </p>
+            {{else}}
+            <p>Your image is already compressed</p>
+            <p>
+                <a type="button" href="/" class="btn btn-primary">Try more images</a>
+            </p>
+            {{end}}
+        </div>
+    </div>
+
+
+</div>
+<script src="/assets/main.js"></script>
+</body>
+</html>
