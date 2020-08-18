@@ -31,6 +31,7 @@ func NewApp() *app {
 	}
 
 	store = sessions.NewCookieStore([]byte(sessionKey))
+	store.Options.MaxAge = 3600
 
 	cfg := config{
 		// at least 180 seconds to be able to handle big files uploads with slow 3G connection
