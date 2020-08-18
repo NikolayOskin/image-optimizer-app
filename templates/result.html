@@ -17,10 +17,12 @@
 <div class="container center">
     <div class="row">
         <div class="col-md-12 pt-5">
-            <h1>Result</h1>
+            <h1 class="mb-4">Result</h1>
             {{if (gt .Saved 0)}}
                 <p>TinyImage just saved you <b>{{ .Saved }}%</b></p>
-            <p>
+                <p>Initial size: {{ .BeforeSize }}</p>
+                <p>Compressed size: {{ .AfterSize }}</p>
+            <p class="mt-5">
                 <a type="button" href="/images?file={{.Filename}}" class="btn btn-primary">Download</a>
             </p>
             {{else}}
