@@ -25,19 +25,23 @@ func optimizeJPEG(path string) (compressResult, error) {
 	if err != nil {
 		return result, err
 	}
-	input, err := ioutil.ReadAll(finput)
-	if err != nil {
-		return result, err
-	}
-	in := bytes.NewReader(input)
-	img, err := jpeg.Decode(in)
-	finput.Close()
+	finputStat, err := finput.Stat()
 	if err != nil {
 		return result, err
 	}
 
+	img, err := jpeg.Decode(finput)
+	if err != nil {
+		return result, err
+	}
+	finput.Close()
+
 	// Encode image
-	out := new(bytes.Buffer)
+	out, err := os.Create(path)
+	if err != nil {
+		return result, err
+	}
+	defer out.Close()
 	err = mozjpegbin.Encode(out, img, &mozjpegbin.Options{
 		Quality:  70,
 		Optimize: true,
@@ -46,29 +50,21 @@ func optimizeJPEG(path string) (compressResult, error) {
 		return result, err
 	}
 
-	outlen := int64(out.Len())
+	outStat, err := out.Stat()
+	if err != nil {
+		return result, err
+	}
 
-	result.beforeSize = ByteCountSI(in.Size())
+	outlen := outStat.Size()
+	result.beforeSize = ByteCountSI(finputStat.Size())
 	result.afterSize = ByteCountSI(outlen)
 
-	if outlen < in.Size() {
-		// Write to file
-		f, err := os.Create(path)
-		if err != nil {
-			return result, err
-		}
-		_, err = io.Copy(f, out)
-		if err != nil {
-			return result, err
-		}
-		f.Close()
-
-		result.saved = (in.Size() - outlen) * 100 / in.Size()
-		return result, nil
-	} else {
-		result.saved = 0
+	if outlen < finputStat.Size() {
+		result.saved = (finputStat.Size() - outlen) * 100 / finputStat.Size()
 		return result, nil
 	}
+	result.saved = 0
+	return result, nil
 }
 
 func optimizePNG(path string) (compressResult, error) {
