@@ -108,15 +108,23 @@ func parseImageType(file multipart.File) string {
 	return fileType
 }
 
-func redirectToResultPage(w http.ResponseWriter, r *http.Request, filename string, saved int64) {
+func redirectToResultPage(
+	w http.ResponseWriter,
+	r *http.Request,
+	filename string,
+	result compressResult,
+) {
 	session, err := store.Get(r, sessionName)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	session.AddFlash(filename)
-	session.AddFlash(int(saved))
+	session.Values["filename"] = filename
+	session.Values["beforeSize"] = result.beforeSize
+	session.Values["afterSize"] = result.afterSize
+	session.Values["saved"] = result.saved
+
 	err = session.Save(r, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

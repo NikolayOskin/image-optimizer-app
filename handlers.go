@@ -8,9 +8,11 @@ import (
 )
 
 type sessionData struct {
-	Error    string
-	Saved    int
-	Filename string
+	Error      string
+	Saved      int64
+	Filename   string
+	BeforeSize string
+	AfterSize  string
 }
 
 func showHomePage(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +41,10 @@ func showHomePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func showResult(w http.ResponseWriter, r *http.Request) {
-	sessionData := sessionData{}
+	var (
+		ok          bool
+		sessionData sessionData
+	)
 
 	session, err := store.Get(r, sessionName)
 	if err != nil {
@@ -47,20 +52,20 @@ func showResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if sessionValues := session.Flashes(); len(sessionValues) > 0 {
-		sessionData.Filename = sessionValues[0].(string)
-		sessionData.Saved = sessionValues[1].(int)
-	}
-	err = session.Save(r, w)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	sessionData.Filename, ok = session.Values["filename"].(string)
+	sessionData.BeforeSize, ok = session.Values["beforeSize"].(string)
+	sessionData.AfterSize, ok = session.Values["afterSize"].(string)
+	sessionData.Saved, ok = session.Values["saved"].(int64)
+
+	if !ok {
+		http.Redirect(w, r, "/", 301)
 	}
 
 	tmpl := template.Must(template.ParseFiles("templates/result.html"))
 	err = tmpl.Execute(w, sessionData)
 	if err != nil {
-		panic(err)
+		http.Error(w, "Something goes wrong", 500)
+		return
 	}
 }
 
