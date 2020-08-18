@@ -2,8 +2,9 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/nickalie/go-mozjpegbin"
-	pngquant "github.com/yusukebe/go-pngquant"
+	"github.com/yusukebe/go-pngquant"
 	"image/jpeg"
 	"image/png"
 	"io"
@@ -11,20 +12,28 @@ import (
 	"os"
 )
 
-func optimizeJPEG(path string) (int64, error) {
+type compressResult struct {
+	beforeSize string
+	afterSize  string
+	saved      int64
+}
+
+func optimizeJPEG(path string) (compressResult, error) {
+	result := compressResult{}
+
 	finput, err := os.Open(path)
 	if err != nil {
-		return 0, err
+		return result, err
 	}
 	input, err := ioutil.ReadAll(finput)
 	if err != nil {
-		return 0, err
+		return result, err
 	}
 	in := bytes.NewReader(input)
 	img, err := jpeg.Decode(in)
 	finput.Close()
 	if err != nil {
-		return 0, err
+		return result, err
 	}
 
 	// Encode image
@@ -34,73 +43,84 @@ func optimizeJPEG(path string) (int64, error) {
 		Optimize: true,
 	})
 	if err != nil {
-		return 0, err
+		return result, err
 	}
 
 	outlen := int64(out.Len())
+
+	result.beforeSize = ByteCountSI(in.Size())
+	result.afterSize = ByteCountSI(outlen)
+
 	if outlen < in.Size() {
 		// Write to file
 		f, err := os.Create(path)
 		if err != nil {
-			return 0, err
+			return result, err
 		}
 		_, err = io.Copy(f, out)
 		if err != nil {
-			return 0, err
+			return result, err
 		}
 		f.Close()
 
-		saved := (in.Size() - outlen) * 100 / in.Size()
-		return saved, nil
+		result.saved = (in.Size() - outlen) * 100 / in.Size()
+		return result, nil
 	} else {
-		return 0, nil
+		result.saved = 0
+		return result, nil
 	}
 }
 
-func optimizePNG(path string) (int64, error) {
+func optimizePNG(path string) (compressResult, error) {
+	result := compressResult{}
+
 	finput, err := os.Open(path)
 	if err != nil {
-		return 0, err
+		return result, err
 	}
 	input, err := ioutil.ReadAll(finput)
 	if err != nil {
-		return 0, err
+		return result, err
 	}
 	in := bytes.NewReader(input)
 	img, err := png.Decode(in)
 	finput.Close()
 	if err != nil {
-		return 0, err
+		return result, err
 	}
 
 	// Encode image
 	out := new(bytes.Buffer)
 	cimg, err := pngquant.Compress(img, "1")
 	if err != nil {
-		return 0, err
+		return result, err
 	}
 	err = png.Encode(out, cimg)
 	if err != nil {
-		return 0, err
+		return result, err
 	}
 
 	outlen := int64(out.Len())
+
+	result.beforeSize = ByteCountSI(in.Size())
+	result.afterSize = ByteCountSI(outlen)
+
 	if outlen < in.Size() {
 		// Write to file
 		f, err := os.Create(path)
 		if err != nil {
-			return 0, err
+			return result, err
 		}
 		_, err = io.Copy(f, out)
 		if err != nil {
-			return 0, err
+			return result, err
 		}
 		f.Close()
 
-		saved := (in.Size() - outlen) * 100 / in.Size()
-		return saved, nil
+		result.saved = (in.Size() - outlen) * 100 / in.Size()
+		return result, nil
 	} else {
-		return 0, nil
+		return result, nil
 	}
 }
 

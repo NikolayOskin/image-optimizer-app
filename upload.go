@@ -38,14 +38,14 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	saved, err := optimizeImage(imageType, path)
+	result, err := optimizeImage(imageType, path)
 	if err != nil {
 		log.Printf("error while optimizing image file: %v", err)
 		redirectWithErr(w, r, "something goes wrong")
 		return
 	}
 
-	redirectToResultPage(w, r, header.Filename, saved)
+	redirectToResultPage(w, r, header.Filename, result)
 }
 
 func errWhileUpload(w http.ResponseWriter, r *http.Request, err error) bool {
@@ -61,25 +61,25 @@ func errWhileUpload(w http.ResponseWriter, r *http.Request, err error) bool {
 	return false
 }
 
-func optimizeImage(imageType string, path string) (int64, error) {
-	var saved int64
+func optimizeImage(imageType string, path string) (compressResult, error) {
+	var result compressResult
 
 	if imageType == jpegType || imageType == jpgType {
-		saved, err := optimizeJPEG(path)
+		result, err := optimizeJPEG(path)
 		if err != nil {
-			return saved, err
+			return result, err
 		}
-		return saved, nil
+		return result, nil
 	}
 	if imageType == pngType {
-		saved, err := optimizePNG(path)
+		result, err := optimizePNG(path)
 		if err != nil {
-			return saved, err
+			return result, err
 		}
-		return saved, nil
+		return result, nil
 	}
 
-	return saved, errors.New("imageType passed not jpeg or png")
+	return result, errors.New("file type passed is not jpeg or png")
 }
 
 func storeFile(file *multipart.File, filename string) (string, error) {
