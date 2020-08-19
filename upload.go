@@ -2,22 +2,22 @@ package main
 
 import (
 	"errors"
-	"io"
 	"log"
 	"mime/multipart"
 	"net/http"
-	"os"
 )
 
 const jpegType = "image/jpeg"
 const jpgType = "image/jpg"
 const pngType = "image/png"
 
+// TODO store file to separate folder
 func upload(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 10<<20) // 10mb max file size
 	err := r.ParseMultipartForm(1 << 20)
 	if err != nil {
-		_, _ = w.Write([]byte("could not parse form"))
+		redirectWithErr(w, r, "Could not parse form")
+		return
 	}
 
 	file, header, err := r.FormFile("file")
@@ -26,19 +26,17 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	imageType := parseImageType(file)
-	if imageType != jpegType && imageType != jpgType && imageType != pngType {
+	imgType, err := parseImageType(file)
+	if err != nil {
+		redirectWithErr(w, r, "Could not parse file")
+		return
+	}
+	if imgType != jpegType && imgType != jpgType && imgType != pngType {
 		redirectWithErr(w, r, "File is not correct. Allowed types: jpeg, jpg, png")
 		return
 	}
 
-	path, err := storeFile(&file, header.Filename)
-	if err != nil {
-		redirectWithErr(w, r, err.Error())
-		return
-	}
-
-	result, err := optimizeImage(imageType, path)
+	result, err := storeOptimizedImage(imgType, header, file)
 	if err != nil {
 		log.Printf("error while optimizing image file: %v", err)
 		redirectWithErr(w, r, "something goes wrong")
@@ -61,11 +59,15 @@ func errWhileUpload(w http.ResponseWriter, r *http.Request, err error) bool {
 	return false
 }
 
-func optimizeImage(imageType string, path string) (compressResult, error) {
+func storeOptimizedImage(
+	imgType string,
+	header *multipart.FileHeader,
+	file multipart.File,
+) (compressResult, error) {
 	var result compressResult
 
-	if imageType == jpegType || imageType == jpgType {
-		result, err := optimizeJPEG(path)
+	if imgType == jpegType || imgType == jpgType {
+		result, err := optimizeJPEG(header, file)
 		if err != nil {
 			return result, err
 		}
@@ -82,30 +84,17 @@ func optimizeImage(imageType string, path string) (compressResult, error) {
 	return result, errors.New("file type passed is not jpeg or png")
 }
 
-func storeFile(file *multipart.File, filename string) (string, error) {
-	uploadedFile, err := os.OpenFile(imagesPath+filename, os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		return "", errors.New("could not upload file")
-	}
-	defer uploadedFile.Close()
-
-	if _, err := io.Copy(uploadedFile, *file); err != nil {
-		return "", errors.New("could not upload file")
-	}
-	return imagesPath + filename, nil
-}
-
-func parseImageType(file multipart.File) string {
+func parseImageType(file multipart.File) (string, error) {
 	fileHeader := make([]byte, 512)
 	if _, err := file.Read(fileHeader); err != nil {
-		panic(err.Error())
+		return "", err
 	}
 	if _, err := file.Seek(0, 0); err != nil {
-		panic(err.Error())
+		return "", err
 	}
 	fileType := http.DetectContentType(fileHeader)
 
-	return fileType
+	return fileType, nil
 }
 
 func redirectToResultPage(

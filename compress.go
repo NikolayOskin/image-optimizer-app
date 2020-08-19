@@ -1,14 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"github.com/nickalie/go-mozjpegbin"
 	"github.com/yusukebe/go-pngquant"
-	"image/jpeg"
 	"image/png"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"os"
 )
 
@@ -18,34 +19,21 @@ type compressResult struct {
 	saved      int64
 }
 
-func optimizeJPEG(path string) (compressResult, error) {
+func optimizeJPEG(fileHeader *multipart.FileHeader, file multipart.File) (compressResult, error) {
 	result := compressResult{}
+	inputFileSize := fileHeader.Size
 
-	finput, err := os.Open(path)
-	if err != nil {
-		return result, err
-	}
-	finputStat, err := finput.Stat()
-	if err != nil {
-		return result, err
-	}
+	in := bufio.NewReader(file)
 
-	img, err := jpeg.Decode(finput)
-	if err != nil {
-		return result, err
-	}
-	finput.Close()
-
-	// Encode image
-	out, err := os.Create(path)
+	out, err := os.Create(imagesPath + fileHeader.Filename)
 	if err != nil {
 		return result, err
 	}
 	defer out.Close()
-	err = mozjpegbin.Encode(out, img, &mozjpegbin.Options{
-		Quality:  70,
-		Optimize: true,
-	})
+
+	cjpeg := mozjpegbin.NewCJpeg()
+	cjpeg.Optimize(true).Quality(70).Output(out).Input(in)
+	err = cjpeg.Run()
 	if err != nil {
 		return result, err
 	}
@@ -56,11 +44,11 @@ func optimizeJPEG(path string) (compressResult, error) {
 	}
 
 	outlen := outStat.Size()
-	result.beforeSize = ByteCountSI(finputStat.Size())
+	result.beforeSize = ByteCountSI(inputFileSize)
 	result.afterSize = ByteCountSI(outlen)
 
-	if outlen < finputStat.Size() {
-		result.saved = (finputStat.Size() - outlen) * 100 / finputStat.Size()
+	if outlen < inputFileSize {
+		result.saved = (inputFileSize - outlen) * 100 / inputFileSize
 		return result, nil
 	}
 	result.saved = 0
