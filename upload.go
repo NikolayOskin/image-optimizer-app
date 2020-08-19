@@ -21,6 +21,10 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	file, header, err := r.FormFile("file")
+	if header == nil {
+		redirectWithErr(w, r, "File is corrupted")
+		return
+	}
 	if errWhileUpload(w, r, err) {
 		return
 	}
