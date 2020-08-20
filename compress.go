@@ -2,13 +2,9 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
+	"github.com/NikolayOskin/image-optimizer-app/pngquant"
 	"github.com/nickalie/go-mozjpegbin"
-	"github.com/yusukebe/go-pngquant"
-	"image/png"
-	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"os"
 )
@@ -55,57 +51,36 @@ func optimizeJPEG(fileHeader *multipart.FileHeader, file multipart.File) (compre
 	return result, nil
 }
 
-func optimizePNG(path string) (compressResult, error) {
+func optimizePNG(fileHeader *multipart.FileHeader, file multipart.File) (compressResult, error) {
 	result := compressResult{}
+	inputFileSize := fileHeader.Size
 
-	finput, err := os.Open(path)
+	out, err := os.Create(imagesPath + fileHeader.Filename)
 	if err != nil {
 		return result, err
 	}
-	input, err := ioutil.ReadAll(finput)
-	if err != nil {
-		return result, err
-	}
-	in := bytes.NewReader(input)
-	img, err := png.Decode(in)
-	finput.Close()
+	defer out.Close()
+
+	err = pngquant.Compress(file, out, "1")
 	if err != nil {
 		return result, err
 	}
 
-	// Encode image
-	out := new(bytes.Buffer)
-	cimg, err := pngquant.Compress(img, "1")
-	if err != nil {
-		return result, err
-	}
-	err = png.Encode(out, cimg)
+	outStat, err := out.Stat()
 	if err != nil {
 		return result, err
 	}
 
-	outlen := int64(out.Len())
-
-	result.beforeSize = ByteCountSI(in.Size())
+	outlen := outStat.Size()
+	result.beforeSize = ByteCountSI(inputFileSize)
 	result.afterSize = ByteCountSI(outlen)
 
-	if outlen < in.Size() {
-		// Write to file
-		f, err := os.Create(path)
-		if err != nil {
-			return result, err
-		}
-		_, err = io.Copy(f, out)
-		if err != nil {
-			return result, err
-		}
-		f.Close()
-
-		result.saved = (in.Size() - outlen) * 100 / in.Size()
-		return result, nil
-	} else {
+	if outlen < inputFileSize {
+		result.saved = (inputFileSize - outlen) * 100 / inputFileSize
 		return result, nil
 	}
+	result.saved = 0
+	return result, nil
 }
 
 func ByteCountSI(b int64) string {
