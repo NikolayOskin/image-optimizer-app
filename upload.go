@@ -77,8 +77,8 @@ func storeOptimizedImage(
 		}
 		return result, nil
 	}
-	if imageType == pngType {
-		result, err := optimizePNG(path)
+	if imgType == pngType {
+		result, err := optimizePNG(header, file)
 		if err != nil {
 			return result, err
 		}
