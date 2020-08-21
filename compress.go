@@ -3,16 +3,21 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/NikolayOskin/image-optimizer-app/pngquant"
-	"github.com/nickalie/go-mozjpegbin"
+	"math/rand"
 	"mime/multipart"
 	"os"
+	"strconv"
+	"time"
+
+	"github.com/NikolayOskin/image-optimizer-app/pngquant"
+	"github.com/nickalie/go-mozjpegbin"
 )
 
 type compressResult struct {
 	beforeSize string
 	afterSize  string
 	saved      int64
+	fileName   string
 }
 
 func optimizeJPEG(fileHeader *multipart.FileHeader, file multipart.File) (compressResult, error) {
@@ -21,10 +26,11 @@ func optimizeJPEG(fileHeader *multipart.FileHeader, file multipart.File) (compre
 
 	in := bufio.NewReader(file)
 
-	out, err := os.Create(imagesPath + fileHeader.Filename)
+	out, name, err := createUniqueFile(fileHeader.Filename)
 	if err != nil {
 		return result, err
 	}
+	result.fileName = name
 	defer out.Close()
 
 	cjpeg := mozjpegbin.NewCJpeg()
@@ -55,10 +61,11 @@ func optimizePNG(fileHeader *multipart.FileHeader, file multipart.File) (compres
 	result := compressResult{}
 	inputFileSize := fileHeader.Size
 
-	out, err := os.Create(imagesPath + fileHeader.Filename)
+	out, name, err := createUniqueFile(fileHeader.Filename)
 	if err != nil {
 		return result, err
 	}
+	result.fileName = name
 	defer out.Close()
 
 	err = pngquant.Compress(file, out, "1")
@@ -81,6 +88,31 @@ func optimizePNG(fileHeader *multipart.FileHeader, file multipart.File) (compres
 	}
 	result.saved = 0
 	return result, nil
+}
+
+func createUniqueFile(filename string) (*os.File, string, error) {
+	if fileExists(imagesPath + filename) {
+		r := time.Now().Unix() + rand.Int63n(100)
+		file, err := os.Create(imagesPath + strconv.Itoa(int(r)) + filename)
+		if err != nil {
+			return nil, "", err
+		}
+		return file, strconv.Itoa(int(r)) + filename, nil
+	} else {
+		file, err := os.Create(imagesPath + filename)
+		if err != nil {
+			return nil, "", err
+		}
+		return file, filename, nil
+	}
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }
 
 func ByteCountSI(b int64) string {

@@ -11,7 +11,6 @@ const jpegType = "image/jpeg"
 const jpgType = "image/jpg"
 const pngType = "image/png"
 
-// TODO store file to separate folder
 func upload(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 10<<20) // 10mb max file size
 	err := r.ParseMultipartForm(1 << 20)
@@ -47,7 +46,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectToResultPage(w, r, header.Filename, result)
+	redirectToResultPage(w, r, result.fileName, result)
 }
 
 func errWhileUpload(w http.ResponseWriter, r *http.Request, err error) bool {
