@@ -1,4 +1,4 @@
-package main
+package cleaner
 
 import (
 	"log"
@@ -6,10 +6,14 @@ import (
 	"time"
 )
 
+// FileCleanerTask is the time interval task that checks and delete files
+// which were created more than provided duration time ago.
 type FileCleanerTask struct {
-	closed chan struct{}
-	ticker *time.Ticker
-	wg     sync.WaitGroup
+	olderThan time.Duration
+	path      string
+	closed    chan struct{}
+	ticker    *time.Ticker
+	Wg        sync.WaitGroup
 }
 
 func (t *FileCleanerTask) Run() {
@@ -18,7 +22,7 @@ func (t *FileCleanerTask) Run() {
 		case <-t.closed:
 			return
 		case <-t.ticker.C:
-			err := deleteOldImages(imagesPath)
+			err := deleteOldFiles(t.path, t.olderThan)
 			if err != nil {
 				log.Printf("error while delete old images: %v", err)
 			}
@@ -28,5 +32,5 @@ func (t *FileCleanerTask) Run() {
 
 func (t *FileCleanerTask) Stop() {
 	close(t.closed)
-	t.wg.Wait()
+	t.Wg.Wait()
 }

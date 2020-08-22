@@ -1,4 +1,4 @@
-package main
+package cleaner
 
 import (
 	"io/ioutil"
@@ -6,13 +6,13 @@ import (
 	"time"
 )
 
-func deleteOldImages(dir string) error {
+func deleteOldFiles(dir string, olderThan time.Duration) error {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
 	}
 	for _, file := range files {
-		err := deleteIfOld(file)
+		err := deleteIfOld(file, dir, olderThan)
 		if err != nil {
 			return err
 		}
@@ -20,18 +20,14 @@ func deleteOldImages(dir string) error {
 	return nil
 }
 
-func deleteIfOld(file os.FileInfo) error {
+func deleteIfOld(file os.FileInfo, dir string, olderThan time.Duration) error {
 	if !file.Mode().IsRegular() {
 		return nil
 	}
-	if isOlderThanHour(file.ModTime()) {
-		if err := os.Remove(imagesPath + file.Name()); err != nil {
+	if time.Now().Sub(file.ModTime()) > olderThan {
+		if err := os.Remove(dir + file.Name()); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func isOlderThanHour(t time.Time) bool {
-	return time.Now().Sub(t) > 1*time.Hour
 }
