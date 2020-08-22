@@ -1,17 +1,22 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	"github.com/NikolayOskin/image-optimizer-app/cleaner"
 	"github.com/gorilla/sessions"
 )
 
 type app struct {
 	config config
+	task   *cleaner.FileCleanerTask
 }
 
 type config struct {
@@ -41,22 +46,51 @@ func NewApp() *app {
 
 	return &app{
 		config: cfg,
+		task:   cleaner.NewTask(imagesPath, 1*time.Minute, 5*time.Minute),
 	}
 }
 
 func (a *app) Run() {
-	http.HandleFunc("/", showHomePage)
-	http.HandleFunc("/upload", upload)
-	http.HandleFunc("/result", showResult)
-	http.HandleFunc("/images", download)
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
+	createRoutes()
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
 	srv := &http.Server{
 		Addr:         net.JoinHostPort("", a.config.serverPort),
 		ReadTimeout:  a.config.readWriteTimeout * time.Second,
 		WriteTimeout: a.config.readWriteTimeout * time.Second,
 	}
-	log.Println("Ready to start the server...")
 
-	log.Println(srv.ListenAndServe())
+	go func() {
+		log.Printf("API listening on %s", net.JoinHostPort("", a.config.serverPort))
+		err := srv.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatalf("failed to listen: %v", err)
+		}
+	}()
+
+	log.Println("Starting file cleaner task")
+	a.task.Wg.Add(1)
+	go func() {
+		a.task.Run()
+		a.task.Wg.Done()
+	}()
+
+	select {
+	case sig := <-shutdown:
+		log.Printf("Got %s signal. Stopping cleaner task...\n", sig)
+		a.task.Stop()
+		log.Println("Shutting down the server...")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		_ = srv.Close()
+		log.Println("Could not stop the server gracefully")
+		return
+	}
+	log.Println("Server stopped")
 }
