@@ -22,14 +22,18 @@
                 <p>TinyImage just saved you <b>{{ .Saved }}%</b></p>
                 <p>Initial size: {{ .BeforeSize }}</p>
                 <p>Compressed size: {{ .AfterSize }}</p>
-            <p class="mt-5">
-                <a type="button" href="/images?file={{.Filename}}" class="btn btn-primary">Download</a>
-            </p>
+                <p class="mt-5">
+                    <a type="button" href="/images?file={{.Filename}}" class="btn btn-primary">Download</a>
+                </p>
+                <p class="small grey">The file will be deleted in 5 minutes.</p>
+                <p class="mt-5 pt-5">
+                    <a type="button" href="/" class="btn btn-primary">Try more</a>
+                </p>
             {{else}}
-            <p>Your image is already compressed</p>
-            <p>
-                <a type="button" href="/" class="btn btn-primary">Try more images</a>
-            </p>
+                <p>Your image is already compressed</p>
+                <p>
+                    <a type="button" href="/" class="btn btn-primary">Try more images</a>
+                </p>
             {{end}}
         </div>
     </div>
