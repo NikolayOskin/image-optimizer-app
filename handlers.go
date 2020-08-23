@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 type sessionData struct {
@@ -33,7 +34,7 @@ func showHomePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl := template.Must(template.ParseFiles("templates/home.html"))
+	tmpl := template.Must(template.ParseFiles(filepath.Join("templates", "home.html")))
 	err = tmpl.Execute(w, sessionData)
 	if err != nil {
 		panic(err)
@@ -61,7 +62,7 @@ func showResult(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", 301)
 	}
 
-	tmpl := template.Must(template.ParseFiles("templates/result.html"))
+	tmpl := template.Must(template.ParseFiles(filepath.Join("templates", "result.html")))
 	err = tmpl.Execute(w, sessionData)
 	if err != nil {
 		http.Error(w, "Something goes wrong", 500)

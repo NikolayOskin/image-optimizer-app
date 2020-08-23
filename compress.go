@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"mime/multipart"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -26,7 +27,7 @@ func optimizeJPEG(fileHeader *multipart.FileHeader, file multipart.File) (compre
 
 	in := bufio.NewReader(file)
 
-	out, name, err := createUniqueFile(fileHeader.Filename)
+	out, name, err := createUniqueImageFile(fileHeader.Filename)
 	if err != nil {
 		return result, err
 	}
@@ -61,7 +62,7 @@ func optimizePNG(fileHeader *multipart.FileHeader, file multipart.File) (compres
 	result := compressResult{}
 	inputFileSize := fileHeader.Size
 
-	out, name, err := createUniqueFile(fileHeader.Filename)
+	out, name, err := createUniqueImageFile(fileHeader.Filename)
 	if err != nil {
 		return result, err
 	}
@@ -90,16 +91,16 @@ func optimizePNG(fileHeader *multipart.FileHeader, file multipart.File) (compres
 	return result, nil
 }
 
-func createUniqueFile(filename string) (*os.File, string, error) {
-	if fileExists(imagesPath + filename) {
+func createUniqueImageFile(filename string) (*os.File, string, error) {
+	if fileExists(filepath.Join(imagesPath, filename)) {
 		r := time.Now().Unix() + rand.Int63n(100)
-		file, err := os.Create(imagesPath + strconv.Itoa(int(r)) + filename)
+		file, err := os.Create(filepath.Join(imagesPath, strconv.Itoa(int(r))+filename))
 		if err != nil {
 			return nil, "", err
 		}
 		return file, strconv.Itoa(int(r)) + filename, nil
 	} else {
-		file, err := os.Create(imagesPath + filename)
+		file, err := os.Create(filepath.Join(imagesPath, filename))
 		if err != nil {
 			return nil, "", err
 		}

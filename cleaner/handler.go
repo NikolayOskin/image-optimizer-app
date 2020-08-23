@@ -3,6 +3,7 @@ package cleaner
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -25,7 +26,7 @@ func deleteIfOld(file os.FileInfo, dir string, olderThan time.Duration) error {
 		return nil
 	}
 	if time.Now().Sub(file.ModTime()) > olderThan {
-		if err := os.Remove(dir + file.Name()); err != nil {
+		if err := os.Remove(filepath.Join(dir, file.Name())); err != nil {
 			return err
 		}
 	}
