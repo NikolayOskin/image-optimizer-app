@@ -29,17 +29,17 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	imgType, err := parseImageType(file)
+	fileType, err := detectFileType(file)
 	if err != nil {
 		redirectWithErr(w, r, "Could not parse file")
 		return
 	}
-	if imgType != jpegType && imgType != jpgType && imgType != pngType {
+	if fileType != jpegType && fileType != jpgType && fileType != pngType {
 		redirectWithErr(w, r, "File is not correct. Allowed types: jpeg, jpg, png")
 		return
 	}
 
-	result, err := storeOptimizedImage(imgType, header, file)
+	result, err := storeCompressedImage(fileType, header, file)
 	if err != nil {
 		log.Printf("error while optimizing image file: %v", err)
 		redirectWithErr(w, r, "something goes wrong")
@@ -62,7 +62,7 @@ func errWhileUpload(w http.ResponseWriter, r *http.Request, err error) bool {
 	return false
 }
 
-func storeOptimizedImage(
+func storeCompressedImage(
 	imgType string,
 	header *multipart.FileHeader,
 	file multipart.File,
@@ -70,14 +70,14 @@ func storeOptimizedImage(
 	var result compressResult
 
 	if imgType == jpegType || imgType == jpgType {
-		result, err := optimizeJPEG(header, file)
+		result, err := compressJPEG(header, file)
 		if err != nil {
 			return result, err
 		}
 		return result, nil
 	}
 	if imgType == pngType {
-		result, err := optimizePNG(header, file)
+		result, err := compressPNG(header, file)
 		if err != nil {
 			return result, err
 		}
@@ -87,7 +87,7 @@ func storeOptimizedImage(
 	return result, errors.New("file type passed is not jpeg or png")
 }
 
-func parseImageType(file multipart.File) (string, error) {
+func detectFileType(file multipart.File) (string, error) {
 	fileHeader := make([]byte, 512)
 	if _, err := file.Read(fileHeader); err != nil {
 		return "", err

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"math/rand"
 	"mime/multipart"
@@ -21,73 +22,74 @@ type compressResult struct {
 	fileName   string
 }
 
-func optimizeJPEG(fileHeader *multipart.FileHeader, file multipart.File) (compressResult, error) {
+func (r *compressResult) countCompressedSizes(inputFileSize int64, outFile *os.File) error {
+	if inputFileSize == 0 {
+		return errors.New("inputFileSize can not be 0")
+	}
+
+	outStat, err := outFile.Stat()
+	if err != nil {
+		return err
+	}
+
+	outlen := outStat.Size()
+	r.beforeSize = ByteCountSI(inputFileSize)
+	r.afterSize = ByteCountSI(outlen)
+
+	if outlen < inputFileSize {
+		r.saved = (inputFileSize - outlen) * 100 / inputFileSize
+		return nil
+	}
+	return nil
+}
+
+func compressJPEG(fileHeader *multipart.FileHeader, file multipart.File) (compressResult, error) {
 	result := compressResult{}
 	inputFileSize := fileHeader.Size
 
 	in := bufio.NewReader(file)
 
-	out, name, err := createUniqueImageFile(fileHeader.Filename)
+	outFile, name, err := createUniqueImageFile(fileHeader.Filename)
 	if err != nil {
 		return result, err
 	}
 	result.fileName = name
-	defer out.Close()
+	defer outFile.Close()
 
 	cjpeg := mozjpegbin.NewCJpeg()
-	cjpeg.Optimize(true).Quality(70).Output(out).Input(in)
+	cjpeg.Optimize(true).Quality(70).Output(outFile).Input(in)
 	err = cjpeg.Run()
 	if err != nil {
 		return result, err
 	}
 
-	outStat, err := out.Stat()
+	err = result.countCompressedSizes(inputFileSize, outFile)
 	if err != nil {
 		return result, err
 	}
-
-	outlen := outStat.Size()
-	result.beforeSize = ByteCountSI(inputFileSize)
-	result.afterSize = ByteCountSI(outlen)
-
-	if outlen < inputFileSize {
-		result.saved = (inputFileSize - outlen) * 100 / inputFileSize
-		return result, nil
-	}
-	result.saved = 0
 	return result, nil
 }
 
-func optimizePNG(fileHeader *multipart.FileHeader, file multipart.File) (compressResult, error) {
+func compressPNG(fileHeader *multipart.FileHeader, file multipart.File) (compressResult, error) {
 	result := compressResult{}
 	inputFileSize := fileHeader.Size
 
-	out, name, err := createUniqueImageFile(fileHeader.Filename)
+	outFile, name, err := createUniqueImageFile(fileHeader.Filename)
 	if err != nil {
 		return result, err
 	}
 	result.fileName = name
-	defer out.Close()
+	defer outFile.Close()
 
-	err = pngquant.Compress(file, out, "1")
+	err = pngquant.Compress(file, outFile, "1")
 	if err != nil {
 		return result, err
 	}
 
-	outStat, err := out.Stat()
+	err = result.countCompressedSizes(inputFileSize, outFile)
 	if err != nil {
 		return result, err
 	}
-
-	outlen := outStat.Size()
-	result.beforeSize = ByteCountSI(inputFileSize)
-	result.afterSize = ByteCountSI(outlen)
-
-	if outlen < inputFileSize {
-		result.saved = (inputFileSize - outlen) * 100 / inputFileSize
-		return result, nil
-	}
-	result.saved = 0
 	return result, nil
 }
 
@@ -108,8 +110,8 @@ func createUniqueImageFile(filename string) (*os.File, string, error) {
 	}
 }
 
-func fileExists(filename string) bool {
-	info, err := os.Stat(filename)
+func fileExists(filePath string) bool {
+	info, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
 		return false
 	}
