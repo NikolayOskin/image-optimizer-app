@@ -24,7 +24,7 @@ func (t *FileCleanerTask) Run() {
 		case <-t.ticker.C:
 			err := deleteOldFiles(t.path, t.olderThan)
 			if err != nil {
-				log.Printf("error while delete old images: %v", err)
+				log.Printf("error while delete old files: %v", err)
 			}
 		}
 	}
