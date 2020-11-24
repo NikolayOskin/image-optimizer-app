@@ -24,6 +24,7 @@ type config struct {
 	readWriteTimeout time.Duration
 }
 
+// NewApp - Configuring & Instantiating app
 func NewApp() *app {
 	serverPort := os.Getenv("SERVER_PORT")
 	if serverPort == "" {
@@ -50,6 +51,7 @@ func NewApp() *app {
 	}
 }
 
+// Run app
 func (a *app) Run() {
 	createRoutes()
 
