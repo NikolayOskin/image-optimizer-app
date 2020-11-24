@@ -101,13 +101,12 @@ func createUniqueImageFile(filename string) (*os.File, string, error) {
 			return nil, "", err
 		}
 		return file, strconv.Itoa(int(r)) + filename, nil
-	} else {
-		file, err := os.Create(filepath.Join(imagesPath, filename))
-		if err != nil {
-			return nil, "", err
-		}
-		return file, filename, nil
 	}
+	file, err := os.Create(filepath.Join(imagesPath, filename))
+	if err != nil {
+		return nil, "", err
+	}
+	return file, filename, nil
 }
 
 func fileExists(filePath string) bool {
@@ -118,6 +117,7 @@ func fileExists(filePath string) bool {
 	return !info.IsDir()
 }
 
+// ByteCountSI - convert byte size to kb/mb
 func ByteCountSI(b int64) string {
 	const unit = 1000
 	if b < unit {
