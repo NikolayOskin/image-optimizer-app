@@ -9,16 +9,24 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        sh '''export XDG_CACHE_HOME="/tmp/.cache"
-go get -u golang.org/x/lint/golint
-go build'''
+        sh 'export XDG_CACHE_HOME="/tmp/.cache"'
+
+        echo 'Getting golint'
+        sh 'go get -u golang.org/x/lint/golint'
+
+        echo 'Building'
+        sh 'go build'
       }
     }
 
     stage('Lint') {
       steps {
-        sh '''go vet .
-golint .'''
+        withEnv(["PATH+GO=${GOPATH}/bin"]) {
+          echo 'Running vetting'
+          sh 'go vet .'
+          echo 'Running linting'
+          sh 'golint .'
+        }
       }
     }
 
