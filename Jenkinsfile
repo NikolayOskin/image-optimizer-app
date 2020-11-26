@@ -9,7 +9,7 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        sh 'export XDG_CACHE_HOME="/tmp/.cache"'
+        sh '''export XDG_CACHE_HOME="/tmp/.cache"'''
 
         echo 'Getting golint'
         sh 'go get -u golang.org/x/lint/golint'
