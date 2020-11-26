@@ -1,14 +1,17 @@
 pipeline {
-  agent any
-  stages {
-    stage('Build') {
-      steps {
-        git(url: 'https://github.com/NikolayOskin/image-optimizer-app', branch: 'master')
-      }
+  agent {
+    docker {
+      image 'golang:latest'
+      args '-p 3000:3000'
     }
 
   }
-  environment {
-    Prod = ''
+  stages {
+    stage('Build') {
+      steps {
+        sh 'go get -u golang.org/x/lint/golint'
+      }
+    }
+
   }
 }
