@@ -1,8 +1,19 @@
 version: '3.7'
 
 services:
-  golang:
-    container_name: golang
+  prod:
+    container_name: prod
+    tty: true
+    build:
+      context: ./
+      dockerfile: prod.Dockerfile
+    ports:
+      - 8082:8082
+    environment:
+      SERVER_PORT: 8082
+      SESSION_KEY: DONT_FORGET_TO_CHANGE_IT
+  dev:
+    container_name: dev
     tty: true
     build:
       context: ./docker
