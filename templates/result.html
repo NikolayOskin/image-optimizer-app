@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Tiny Image</title>
+    <title>Image Squeezer: Result</title>
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
           crossorigin="anonymous">
@@ -19,7 +19,7 @@
         <div class="col-md-12 pt-5">
             <h1 class="mb-4">Result</h1>
             {{if (gt .Saved 0)}}
-                <p>TinyImage just saved you <b>{{ .Saved }}%</b></p>
+                <p>Image Squeezer just saved you <b>{{ .Saved }}%</b></p>
                 <p>Initial size: {{ .BeforeSize }}</p>
                 <p>Compressed size: {{ .AfterSize }}</p>
                 <p class="mt-5">
