@@ -12,7 +12,7 @@ $('#fileup').change(function(){
         $( ".imgupload.stop" ).show("slow");
 
         $('#namefile').css({"color":"#f67280","font-weight":700});
-        $('#namefile').html("File "+filename+" is not  pic!");
+        $('#namefile').html("File "+filename+" is not image!");
 
         $( "#submitbtn" ).hide();
         $( "#fakebtn" ).show();
