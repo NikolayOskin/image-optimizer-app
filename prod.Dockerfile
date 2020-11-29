@@ -24,6 +24,7 @@ RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
 
 # Final stage: Run the binary
 FROM alpine
+LABEL stage=builder
 
 COPY --from=builder /etc/passwd /etc/passwd
 
