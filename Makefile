@@ -1,8 +1,4 @@
-build:
-	docker build -f prod.Dockerfile --rm -t leakso86/tinyimg .
-
-push:
-	docker push leakso86/tinyimg
-
-clean:
-	docker image prune --filter label=stage=builder
+pull:
+	docker pull leakso86/tinyimg
+update:
+	docker-service update --image leakso86/tinyimg tinyimg
